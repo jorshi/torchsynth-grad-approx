@@ -48,7 +48,7 @@ class TorchSynthSPSA(torch.autograd.Function):
             # Initialize gradient for input
             grad_input = torch.empty_like(input)
 
-            # Simultaneous Pertubation Stochastic Approximation
+            # Simultaneous Perturbation Stochastic Approximation
             eps = 1e-6
             delta = TorchSynthSPSA.perturbation(input)
 

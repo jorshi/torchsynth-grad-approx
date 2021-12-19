@@ -14,7 +14,7 @@
 
 # +
 import auraloss
-from synth import SimpleSynth,SimpleFMSynth
+from synth import SimpleSynth, SimpleFMSynth
 from torchsynth.config import SynthConfig
 import torch
 import IPython.display as ipd
@@ -55,8 +55,8 @@ synth.set_parameters(
         ("keyboard", "midi_f0"): torch.tensor([48] * BATCH_SIZE),
         ("keyboard", "duration"): torch.tensor([0.9] * BATCH_SIZE),
         ("adsr", "attack"): torch.tensor([0.01] * BATCH_SIZE),
-        #("adsr", "decay"): torch.tensor([0.5] * BATCH_SIZE),
-        ("adsr", "sustain"): torch.tensor([0.] * BATCH_SIZE),
+        # ("adsr", "decay"): torch.tensor([0.5] * BATCH_SIZE),
+        ("adsr", "sustain"): torch.tensor([0.0] * BATCH_SIZE),
         ("adsr", "release"): torch.tensor([0.1] * BATCH_SIZE),
         ("adsr", "alpha"): torch.tensor([5.0] * BATCH_SIZE),
         ("vco", "tuning"): torch.tensor([12.0] * BATCH_SIZE),
@@ -66,7 +66,7 @@ synth.set_parameters(
         ("fm", "initial_phase"): torch.tensor([0.0] * BATCH_SIZE),
         ("fm", "mod_depth"): torch.tensor([0.0] * BATCH_SIZE),
     },
-    freeze=True
+    freeze=True,
 )
 synth = synth.to(device)
 
@@ -85,7 +85,7 @@ synth_optim = TorchSynthModule(synth).to(device)
 
 audio = synth_optim()
 
-error = mrstft(target_audio[:,None,:], audio[:,None,:])
+error = mrstft(target_audio[:, None, :], audio[:, None, :])
 print(error)
 ipd.Audio(audio[0].detach().cpu().numpy(), rate=SR)
 # -
@@ -99,16 +99,16 @@ optimizer = torch.optim.Adam(synth_optim.parameters(), lr=0.005)
 pbar = tqdm(range(1000), desc="Iter 0")
 for i in pbar:
     optimizer.zero_grad()
-    
+
     audio = synth_optim()
-    
-    error = mrstft(target_audio[:,None,:], audio[:,None,:])
+
+    error = mrstft(target_audio[:, None, :], audio[:, None, :])
     pbar.set_description(f"Iter {i}: Error: {error}")
-    
+
     if error < 0.05:
         break
-    #error = pitch_loss(target_audio[:,None,:], audio[:,None,:])
-    
+    # error = pitch_loss(target_audio[:,None,:], audio[:,None,:])
+
     error.backward()
     optimizer.step()
 # -
@@ -119,5 +119,3 @@ synth.get_parameters()
 # After optimization
 audio = synth_optim()
 ipd.Audio(audio[0].detach().cpu().numpy(), rate=SR)
-
-

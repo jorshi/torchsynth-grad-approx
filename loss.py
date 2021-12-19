@@ -38,8 +38,12 @@ class PitchLoss(nn.Module):
     def stft(self, audio):
         self.window = self.window.to(audio.device)
         audio = audio.squeeze(1)
-        x_stft = torch.stft(audio, n_fft=1024, hop_length=512, window=self.window, return_complex=True)
-        x_mag = torch.sqrt(torch.clamp((x_stft.real ** 2) + (x_stft.imag ** 2), min=1e-8))
+        x_stft = torch.stft(
+            audio, n_fft=1024, hop_length=512, window=self.window, return_complex=True
+        )
+        x_mag = torch.sqrt(
+            torch.clamp((x_stft.real ** 2) + (x_stft.imag ** 2), min=1e-8)
+        )
         return torch.log10(x_mag)
 
     def forward(self, x, y):

@@ -71,10 +71,10 @@ ipd.Audio(audio[0].detach().cpu().numpy(), rate=SR)
 # +
 mrstft = auraloss.freq.MultiResolutionSTFTLoss()
 
- 
+
 target_t = torch.tensor(target).to("cuda").expand(audio.shape[0], -1)[:, None, :]
 
-loss = mrstft(target_t, audio[:,None,:])
+loss = mrstft(target_t, audio[:, None, :])
 print(loss)
 
 # +
@@ -83,11 +83,11 @@ optimizer = torch.optim.Adam(synth.parameters(), lr=0.01)
 pbar = tqdm(range(10000), desc="Iter 0")
 for i in pbar:
     optimizer.zero_grad()
-    
+
     audio = synth()
-    error = mrstft(target_t, audio[:,None,:])
+    error = mrstft(target_t, audio[:, None, :])
     pbar.set_description(f"Iter {i}: Error: {error}")
-    
+
     error.backward()
     optimizer.step()
 # -
