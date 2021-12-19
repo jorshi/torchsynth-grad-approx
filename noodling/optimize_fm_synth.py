@@ -14,14 +14,13 @@
 
 # +
 import auraloss
-from synth import SimpleSynth, SimpleFMSynth
+from synth import SimpleFMSynth
 from torchsynth.config import SynthConfig
 import torch
 import IPython.display as ipd
 from tqdm import tqdm
 
-from module import TorchSynthSPSA, TorchSynthModule
-from loss import PitchLoss
+from module import TorchSynthModule
 
 # %load_ext autoreload
 # %autoreload 2

@@ -152,4 +152,4 @@ cython_debug/
 .idea/
 
 # For now leaving out the audio from the repo
-audio/
+noodling/audio/
