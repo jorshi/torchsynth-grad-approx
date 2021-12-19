@@ -42,25 +42,66 @@ if torch.cuda.is_available():
 
 
 class TorchSynthSPSA(torch.autograd.Function):
+    
     @staticmethod
-    def forward(ctx, input, synth):
-        ctx.save_for_backward(input)
-        ctx.synth = synth
-
+    def play_synth(input, synth):
         parameters = [param for _, param in sorted(synth.named_parameters())]
         for i, parameter in enumerate(parameters):
             parameter.requires_grad = False
             parameter.data = input[:, i]
 
         output, _, _ = synth()
-
+        
         return output
-
+    
+    @staticmethod
+    def forward(ctx, input, synth):
+        ctx.save_for_backward(input)
+        ctx.synth = synth
+        return TorchSynthSPSA.play_synth(input, synth)
+    
+    @staticmethod
+    def pertubation(y):
+        """
+        Random samples from a Rademacher distribution - same shape as the input tensor
+        """
+        x = torch.empty_like(y).uniform_(0,1)
+        x = torch.bernoulli(x)
+        # Keep x where x==1, otherwise change to -1.0
+        x = torch.where(x==1.0, x, torch.tensor(-1.0, dtype=y.dtype, device=y.device))
+        return x
+        
+    
     @staticmethod
     def backward(ctx, grad_output):
-        print("here in backward")
-        return None
+        # Initialize the gradient on the input to None
+        input = ctx.saved_tensors[0]
+        grad_input = None
 
+        if ctx.needs_input_grad[0]:
+            # Need to compute the gradient w.r.t input (synth parameters)
+            
+            # Initialize gradient for input
+            grad_input = torch.empty_like(input)
+            
+            # Simultaneous Pertubation Stochastic Approximation
+            eps = 1e-4
+            delta = TorchSynthSPSA.pertubation(input)
+            
+            j_plus = TorchSynthSPSA.play_synth(input + eps*delta, ctx.synth)
+            j_minus = TorchSynthSPSA.play_synth(input - eps*delta, ctx.synth)
+            
+            grady_num = (j_plus - j_minus)
+            
+            # Iterate through each parameter and compute gradient
+            for i in range(input.shape[1]):
+                grady = grady_num / (2 * eps * delta[:, i])
+                
+                # Dot product between the output grad for each batch
+                for j in range(input.shape[0]):
+                    grad_input[j, i] = torch.dot(grad_output[j], grady[j])
+        
+        return grad_input, None
 
 # +
 synth_func = TorchSynthSPSA.apply
@@ -99,6 +140,7 @@ class TorchSynth(nn.Module):
 
 
 synth = TorchSynth(voice).to("cuda")
+#print(list(synth.synth_parameters))
 
 audio = synth()
 ipd.Audio(audio[0].detach().cpu().numpy(), rate=SR)
@@ -128,10 +170,14 @@ def stft_loss(audio):
 
 # -
 
+error = stft_loss(audio).mean()
+error.backward()
+
+print(gradient)
+
 plt.imshow(target_spectrogram.cpu().numpy(), aspect="auto", origin="lower")
 
 output_spec = stft(audio)
 plt.imshow(output_spec[0].detach().cpu().numpy(), aspect="auto", origin="lower")
 
-error = stft_loss(audio)
-error.backward()
+
