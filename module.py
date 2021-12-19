@@ -49,7 +49,7 @@ class TorchSynthSPSA(torch.autograd.Function):
             grad_input = torch.empty_like(input)
 
             # Simultaneous Pertubation Stochastic Approximation
-            eps = 1e-4
+            eps = 1e-6
             delta = TorchSynthSPSA.perturbation(input)
 
             j_plus = TorchSynthSPSA.play_synth(input + eps * delta, ctx.synth)

@@ -5,12 +5,14 @@
 #       extension: .py
 #       format_name: light
 #       format_version: '1.5'
-#       jupytext_version: 1.13.4
+#       jupytext_version: 1.10.3
 #   kernelspec:
 #     display_name: Python 3
 #     language: python
 #     name: python3
 # ---
+
+#
 
 # +
 import auraloss
@@ -19,6 +21,9 @@ from torchsynth.config import SynthConfig
 import torch
 import IPython.display as ipd
 from tqdm import tqdm
+import matplotlib.pyplot as plt
+import numpy as np
+import librosa.display
 
 from module import TorchSynthSPSA, TorchSynthModule
 from loss import PitchLoss
@@ -57,7 +62,7 @@ synth.set_parameters(
         #("keyboard", "duration"): torch.tensor([0.9] * BATCH_SIZE),
         ("adsr", "attack"): torch.tensor([0.0] * BATCH_SIZE),
         #("adsr", "decay"): torch.tensor([0.5] * BATCH_SIZE),
-        #("adsr", "sustain"): torch.tensor([0.25] * BATCH_SIZE),
+        ("adsr", "sustain"): torch.tensor([0.0] * BATCH_SIZE),
         ("adsr", "release"): torch.tensor([0.1] * BATCH_SIZE),
         ("adsr", "alpha"): torch.tensor([5.0] * BATCH_SIZE),
         ("vco", "tuning"): torch.tensor([0.0] * BATCH_SIZE),
@@ -87,18 +92,21 @@ audio = synth_optim()
 error = mrstft(target_audio[:,None,:], audio[:,None,:])
 print(error)
 ipd.Audio(audio[0].detach().cpu().numpy(), rate=SR)
-
-# +
-# pitch_loss = PitchLoss(SR)
-# pitch_error = pitch_loss(target_audio[:,None,:], audio[:,None,:])
-
-# +
-# pitch_x = pitch_loss.stft(target_audio[:,None,:])
-# print(pitch_x.shape)
-# torch.argmax(pitch_x, dim=2)
 # -
 
 synth_optim.synth.get_parameters()
+
+
+# +
+def plot_spectrograms(target, audio, ax1, ax2): 
+    D1 = librosa.amplitude_to_db(np.abs(librosa.stft(target[0].detach().cpu().numpy())), ref=np.max)
+    librosa.display.specshow(D1, sr=SR, y_axis="mel", ax=ax1)
+
+    D2 = librosa.amplitude_to_db(np.abs(librosa.stft(audio[0].detach().cpu().numpy())), ref=np.max)
+    librosa.display.specshow(D2, sr=SR, y_axis="mel", ax=ax2)
+
+fig, (ax1, ax2) = plt.subplots(ncols=2, figsize=(10,4))
+plot_spectrograms(target_audio, audio, ax1, ax2)
 
 # +
 optimizer = torch.optim.Adam((list(synth_optim.parameters())[0],), lr=0.005)
@@ -112,8 +120,7 @@ for i in pbar:
     error = mrstft(target_audio[:,None,:], audio[:,None,:])
     if error < 0.05:
         break
-    #error = pitch_loss(target_audio[:,None,:], audio[:,None,:])
-    
+
     pbar.set_description(f"Iter {i}: Error: {error}")
     
     error.backward()
@@ -125,5 +132,8 @@ synth.get_parameters()
 # After optimization
 audio = synth_optim()
 ipd.Audio(audio[0].detach().cpu().numpy(), rate=SR)
+
+fig, (ax1, ax2) = plt.subplots(ncols=2, figsize=(10,4))
+plot_spectrograms(target_audio, audio, ax1, ax2)
 
 

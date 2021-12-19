@@ -5,9 +5,9 @@
 #       extension: .py
 #       format_name: light
 #       format_version: '1.5'
-#       jupytext_version: 1.13.4
+#       jupytext_version: 1.10.3
 #   kernelspec:
-#     display_name: Python 3 (ipykernel)
+#     display_name: Python 3
 #     language: python
 #     name: python3
 # ---
@@ -45,8 +45,7 @@ synth_config = SynthConfig(
     reproducible=False,
 )
 synth = SimpleFMSynth(synth_config)
-synth.to(device)
-print(synth.device)
+synth = synth.to(device)
 
 synth.get_parameters()
 
@@ -71,12 +70,11 @@ synth.set_parameters(
 )
 synth = synth.to(device)
 
-synth.randomize()
-synth.get_parameters(include_frozen=False)
-
-synth.randomize(seed=42)
+synth.randomize(seed=45)
 target_audio, _, _ = synth()
 ipd.Audio(target_audio[0].cpu().numpy(), rate=SR)
+
+synth.get_parameters()
 
 # Loss
 mrstft = auraloss.freq.MultiResolutionSTFTLoss()
@@ -85,18 +83,18 @@ mrstft = auraloss.freq.MultiResolutionSTFTLoss()
 # Initialize a TorchSynthModule for optimizing
 synth_optim = TorchSynthModule(synth).to(device)
 
-# Deterministic randomize
-#torch.manual_seed(3)
-#list(synth_optim.parameters())[0].data.uniform_()
-
 audio = synth_optim()
 
 error = mrstft(target_audio[:,None,:], audio[:,None,:])
 print(error)
 ipd.Audio(audio[0].detach().cpu().numpy(), rate=SR)
+# -
+
+# Parameters Before Optimization
+synth.get_parameters()
 
 # +
-optimizer = torch.optim.Adam((list(synth_optim.parameters())[0],), lr=0.005)
+optimizer = torch.optim.Adam(synth_optim.parameters(), lr=0.005)
 
 pbar = tqdm(range(1000), desc="Iter 0")
 for i in pbar:
@@ -115,6 +113,7 @@ for i in pbar:
     optimizer.step()
 # -
 
+# Parameters After Optimization
 synth.get_parameters()
 
 # After optimization
