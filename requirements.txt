@@ -1,0 +1,8 @@
+auraloss
+jupyter
+librosa
+matplotlib
+numpy
+torch
+torchsynth
+tqdm

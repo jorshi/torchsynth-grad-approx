@@ -15,11 +15,18 @@
 
 # ## Optimizing synthesizer parameters using gradient approximation
 #
-# This notebook looks at using gradient approximationt to estimate gradients over a black-box synthesizer. It uses simultaneous perturbation stochastic approximation (SPSA) to estimate the gradients for synthesizer parameters. This technique was used by Marco A. Martínez Ramírez et al. in their work on [Differentiable Signal Processing With Black-Box Audio Effects](https://arxiv.org/abs/2105.04752).
+# This notebook looks at using gradient approximationt to estimate gradients over a
+# black-box synthesizer. It uses simultaneous perturbation stochastic approximation
+# (SPSA) to estimate the gradients for synthesizer parameters. This technique was
+# used by Marco A. Martínez Ramírez et al. in their work on [Differentiable Signal
+# Processing With Black-Box Audio Effects](https://arxiv.org/abs/2105.04752).
 #
-# The goal here is to try to implement that so that we can use a [torchsynth](https://github.com/torchsynth/torchsynth) synthesizer in deep learning training.
+# The goal here is to try to implement that so that we can use a
+# [torchsynth](https://github.com/torchsynth/torchsynth) synthesizer in deep
+# learning training.
 #
-# In this notebook I just experiment with optimizing a few parameters in a simple synthesizer to match a target sound using gradient descent.
+# In this notebook I just experiment with optimizing a few parameters in a simple
+# synthesizer to match a target sound using gradient descent.
 
 # +
 import auraloss
@@ -45,9 +52,14 @@ else:
     device = "cpu"
 
 # ### The Synthesizer
-# The synth that we'll use for this is a super simple one. It has a single saw/square oscillator that recieves a midi pitch, the resulting audio is then sent to an amplitude gate (VCA) that is controlled by an attack-decay-sustain-release (ADSR) envelope.
+# The synth that we'll use for this is a super simple one. It has a single
+# saw/square oscillator that recieves a midi pitch, the resulting audio is
+# then sent to an amplitude gate (VCA) that is controlled by an
+# attack-decay-sustain-release (ADSR) envelope.
 #
-# The simple synth is built with torchsynth, which is a GPU-enabled synthesizer framework built in PyTorch. It renders sounds in batches on a GPU so multiple synth patches can be created at once.
+# The simple synth is built with torchsynth, which is a GPU-enabled synthesizer
+# framework built in PyTorch. It renders sounds in batches on a GPU so multiple
+# synth patches can be created at once.
 
 # +
 # Configure Synth
@@ -90,9 +102,13 @@ synth.get_parameters()
 
 # ### Optimize Three Parameters
 #
-# So torchsynth is built in PyTorch, but it isn't differentiable (yet :) ). So for this hack I am going to experiment with SPSA and see if I can perform sound matching.
+# So torchsynth is built in PyTorch, but it isn't differentiable (yet :) ).
+# So for this hack I am going to experiment with SPSA and see if I can perform
+# sound matching.
 #
-# To keep things simple I'm just focusing on the attack, decay, and the shape of the osc (amount of saw vs. square). The rest of the parameters get frozen at some setting.
+# To keep things simple I'm just focusing on the attack, decay, and the shape of
+# the osc (amount of saw vs. square). The rest of the parameters get frozen at
+# some setting.
 
 # Just focus on a single sound (batch size of 1)
 BATCH_SIZE = 1
@@ -136,7 +152,9 @@ target_audio, _, _ = synth()
 ipd.Audio(target_audio[0].cpu().numpy(), rate=SR)
 
 # #### SPSA Module
-# TorchSynthModule is a PyTorch module that utilizes SPSA to estimate gradients for all the un-frozen parameters in a torchsynth synth. The parameters are randomized upon initialization. This is a starting point for optimization.
+# TorchSynthModule is a PyTorch module that utilizes SPSA to estimate gradients
+# for all the un-frozen parameters in a torchsynth synth. The parameters are randomized
+# upon initialization. This is a starting point for optimization.
 
 # +
 # Initialize a TorchSynthModule for optimizing
@@ -176,7 +194,8 @@ ipd.display(ipd.Audio(audio[0].detach().cpu().numpy(), rate=SR))
 
 # ### Loss Function
 #
-# The loss function used during optimization is multi-resolution STFT loss from [auraloss](https://github.com/csteinmetz1/auraloss)
+# The loss function used during optimization is multi-resolution STFT loss from
+# [auraloss](https://github.com/csteinmetz1/auraloss)
 
 # +
 # Loss
@@ -188,7 +207,10 @@ print("Initial error between the target audio and synth audio:", error)
 # -
 
 # ### Optimization
-# Now use gradient descent to optimize the parameters of the synth to match the target sound. At each iteration the gradient for the parameters is estimated using SPSA. This works by randomly adjusting the parameters +/- by a small amount and using that to derive an approximation for the gradient.
+# Now use gradient descent to optimize the parameters of the synth to match the target
+# sound. At each iteration the gradient for the parameters is estimated using SPSA.
+# This works by randomly adjusting the parameters +/- by a small amount and using that
+# to derive an approximation for the gradient.
 
 optimizer = torch.optim.Adam((list(synth_optim.parameters())[0],), lr=0.005)
 error_log = []
