@@ -10,7 +10,7 @@ from torchsynth.synth import AbstractSynth
 class TorchSynthSPSA(torch.autograd.Function):
     @staticmethod
     def play_synth(input, synth):
-        parameters = [param for _, param in sorted(synth.named_parameters())]
+        parameters = [param for _, param in synth.get_parameters().items()]
         for i, parameter in enumerate(parameters):
             parameter.requires_grad = False
             parameter.data = torch.clip(input[:, i], 0.0, 1.0)
@@ -59,10 +59,9 @@ class TorchSynthSPSA(torch.autograd.Function):
 
             # Iterate through each parameter and compute gradient
             for i in range(input.shape[1]):
-                grady = grady_num / (2 * eps * delta[:, i])
-
                 # Dot product between the output grad for each batch
                 for j in range(input.shape[0]):
+                    grady = grady_num / (2 * eps * delta[j, i])
                     grad_input[j, i] = torch.dot(grad_output[j], grady[j])
 
         return grad_input, None
@@ -74,9 +73,9 @@ class TorchSynthModule(nn.Module):
     """
 
     def __init__(self, synth: AbstractSynth):
-        super(TorchSynth, self).__init__()
+        super(TorchSynthModule, self).__init__()
         self.synth = synth
-        self.num_parameters = len(list(synth.parameters()))
+        self.num_parameters = len(synth.get_parameters())
         self.batch_size = synth.batch_size
 
         # These are parameters for the synth
