@@ -9,7 +9,7 @@ the Neural Audio Synthesis Hackathon that took place on the 18th & 19th of Decem
 
 Over the weekend I explored implementing gradient approximation for 
 [torchsynth](https://github.com/torchsynth/torchsynth), so that synthesizers could
-be include in deep learning models & training without have to have the full synth
+be included in deep learning models & training without having to have the full synth
 be differentiable. It uses simultaneous perturbation stochastic approximation
 (SPSA) to estimate the gradients for synthesizer parameters. This technique was
 used by Marco A. Martínez Ramírez et al. in their work on [Differentiable Signal
